@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getSyncStatus, subscribeSyncStatus, type SyncStatus } from "@/lib/sync/client";
+import { lockApp } from "@/lib/local/lock";
 
 /**
  * Tiny status pill: Offline / Syncing… / Synced ✓
@@ -43,6 +44,24 @@ export function SyncStatusChip() {
         <span className="h-1.5 w-1.5 rounded-full bg-[var(--danger)]" aria-hidden />
         Offline
       </span>
+    );
+  }
+
+  if (status === "unauthed") {
+    return (
+      <button
+        type="button"
+        onClick={() => void lockApp()}
+        className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition active:scale-95"
+        style={{
+          background: "rgba(255, 159, 10, 0.14)",
+          border: "0.5px solid rgba(255, 159, 10, 0.34)",
+          color: "#ff9f0a",
+        }}
+      >
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#ff9f0a" }} aria-hidden />
+        Sign in to sync
+      </button>
     );
   }
 

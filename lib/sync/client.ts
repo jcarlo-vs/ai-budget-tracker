@@ -1,5 +1,5 @@
+import { toast } from "sonner";
 import { localDb, getMeta, setMeta } from "@/lib/local/db";
-import { lockApp } from "@/lib/local/lock";
 import { mergeRow } from "@/lib/sync/merge";
 import type { SyncChanges, SyncRequestBody, SyncResponse } from "@/lib/sync/types";
 
@@ -38,7 +38,7 @@ async function mergeChanges(rows: SyncChanges): Promise<void> {
 }
 
 // ─── Sync-status observability (for <SyncStatusChip>) ──────────────────────
-export type SyncStatus = "idle" | "syncing";
+export type SyncStatus = "idle" | "syncing" | "unauthed";
 let _syncStatus: SyncStatus = "idle";
 const _statusListeners = new Set<(s: SyncStatus) => void>();
 
@@ -58,12 +58,14 @@ function _notifyStatus(s: SyncStatus): void {
 // ────────────────────────────────────────────────────────────────────────────
 
 let syncing = false;
+let authToastShown = false;
 
 export async function syncNow(): Promise<void> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return;
   if (syncing) return;
   syncing = true;
   _notifyStatus("syncing");
+  let endStatus: SyncStatus = "idle";
   try {
     // Capture the push cursor's next value on the CLIENT clock BEFORE collecting, so any
     // edit made during the round-trip stays > lastPushedAt and is pushed next time.
@@ -77,9 +79,15 @@ export async function syncNow(): Promise<void> {
       body: JSON.stringify(body),
     });
     if (res.status === 401) {
-      // Session expired/missing — re-lock so the user re-authenticates and the cookie
-      // is re-issued, instead of silently failing every future sync.
-      await lockApp();
+      // Session expired/missing (e.g. iOS PWA's separate cookie jar). The app is
+      // local-first and fully usable without the server — do NOT lock it (that yanks
+      // the user out mid-action). Surface a quiet "sign in to sync" state instead,
+      // with a one-time toast; the user re-auths from the sync chip to resume.
+      endStatus = "unauthed";
+      if (!authToastShown) {
+        authToastShown = true;
+        toast.error("Couldn't sync — tap the sync chip in Manage to sign in.");
+      }
       return;
     }
     if (!res.ok) return;
@@ -87,11 +95,12 @@ export async function syncNow(): Promise<void> {
     await mergeChanges(data.rows);
     await setMeta(LAST_PULLED_KEY, data.now); // server clock
     await setMeta(LAST_PUSHED_KEY, startedAt); // client clock
+    authToastShown = false; // synced fine — allow the toast again if it later fails
   } catch {
     // Offline / network — swallow; the next trigger retries.
   } finally {
     syncing = false;
-    _notifyStatus("idle");
+    _notifyStatus(endStatus);
   }
 }
 
