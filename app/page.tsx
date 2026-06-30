@@ -1,28 +1,46 @@
+"use client";
+
+import { Suspense } from "react";
 import Link from "next/link";
-import { db } from "@/lib/db/client";
-import { getCategoriesWithMonthTotals } from "@/lib/data/overview";
-import { getMonthlyBudget } from "@/lib/data/budgets";
+import { useSearchParams } from "next/navigation";
+import { useLiveQuery } from "dexie-react-hooks";
+import { getCategoriesWithMonthTotals } from "@/lib/local/data/overview";
+import { getMonthlyBudget } from "@/lib/local/data/budgets";
 import { getYearMonth, parseYearMonth, formatMonthLabel } from "@/lib/month";
 import { formatCentavos } from "@/lib/money";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { BudgetGauge } from "@/components/budget-gauge";
 import { CategoryCard } from "@/components/category-card";
 import { DashboardClient } from "@/components/dashboard-client";
-import { ensureSeedCategories } from "@/lib/data/seed";
-import { markCategoryPaidAction } from "@/app/actions/expenses";
+import { Skeleton } from "@/components/skeleton";
 
-export default async function DashboardPage({
-  searchParams,
-}: { searchParams: Promise<{ y?: string; m?: string }> }) {
-  const sp = await searchParams;
-  const ym = parseYearMonth(sp.y, sp.m, getYearMonth(new Date()));
+function DashboardInner() {
+  const sp = useSearchParams();
+  const ym = parseYearMonth(sp.get("y") ?? undefined, sp.get("m") ?? undefined, getYearMonth(new Date()));
 
-  await ensureSeedCategories(db);
+  const data = useLiveQuery(
+    async () => {
+      const [rows, budget] = await Promise.all([getCategoriesWithMonthTotals(ym), getMonthlyBudget(ym)]);
+      return { rows, budget };
+    },
+    [ym.year, ym.month],
+  );
 
-  const [rows, budget] = await Promise.all([
-    getCategoriesWithMonthTotals(db, ym),
-    getMonthlyBudget(db, ym),
-  ]);
+  if (!data) {
+    return (
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-28 pt-6">
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-44 w-full" />
+        <div className="space-y-3 pt-2">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      </main>
+    );
+  }
+
+  const { rows, budget } = data;
   const spent = rows.reduce((acc, r) => acc + r.spent, 0);
   const allocated = rows.reduce((acc, r) => acc + r.category.monthlyBudget, 0);
   const categories = rows.map((r) => r.category);
@@ -113,12 +131,20 @@ export default async function DashboardPage({
         )}
         {rows.map(({ category, spent }, i) => (
           <div key={category.id} className="reveal" style={{ animationDelay: `${190 + i * 55}ms` }}>
-            <CategoryCard category={category} spent={spent} ym={ym} markPaidAction={markCategoryPaidAction} />
+            <CategoryCard category={category} spent={spent} ym={ym} />
           </div>
         ))}
       </section>
 
       <DashboardClient categories={categories} defaultDate={defaultDate} />
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense>
+      <DashboardInner />
+    </Suspense>
   );
 }

@@ -2,45 +2,34 @@
 
 import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCentavos } from "@/lib/money";
-import type { ActionResult } from "@/lib/action-result";
-
-export type MarkPaidAction = (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
+import { markCategoryPaid } from "@/lib/local/data/transactions";
 
 // A small greyed check button. Tapping it opens an in-app confirmation modal
 // (portaled to <body> so the card's overflow/blur never clips it) before logging
-// the "Paid" expense. Receives the server action as a prop so the server-only
-// action module is never imported into jsdom-tested components.
+// the "Paid" expense into Dexie. Reactive reads (useLiveQuery) re-render the page.
 export function MarkPaidButton({
-  action, categoryId, categoryName, remaining, year, month, className,
+  categoryId, categoryName, remaining, year, month, className,
 }: {
-  action: MarkPaidAction;
-  categoryId: number;
+  categoryId: string;
   categoryName: string;
   remaining: number;
   year: number;
   month: number;
   className?: string;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function confirm() {
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("categoryId", String(categoryId));
-      fd.set("year", String(year));
-      fd.set("month", String(month));
-      const res = await action({ ok: true }, fd);
-      if (res.ok) {
+      try {
+        await markCategoryPaid(categoryId, { year, month });
         toast.success("Marked paid");
         setOpen(false);
-        router.refresh();
-      } else {
-        toast.error(res.error);
+      } catch {
+        toast.error("Could not mark paid");
       }
     });
   }

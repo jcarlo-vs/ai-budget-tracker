@@ -1,14 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { formatCentavos } from "@/lib/money";
 import { paymentLabel } from "@/lib/payment";
-import { deleteExpenseAction } from "@/app/actions/expenses";
-import type { TransactionWithItems } from "@/lib/data/transactions";
+import { deleteExpense, type TransactionWithItems } from "@/lib/local/data/transactions";
 
 export function TransactionRow({ tx, onEdit }: { tx: TransactionWithItems; onEdit: () => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [pending, startTransition] = useTransition();
   const hasItems = tx.items.length > 0;
+
+  function onDelete() {
+    startTransition(async () => {
+      try {
+        await deleteExpense(tx.id);
+      } catch {
+        toast.error("Could not delete expense");
+      }
+    });
+  }
 
   return (
     <div className="surface p-4">
@@ -19,23 +30,21 @@ export function TransactionRow({ tx, onEdit }: { tx: TransactionWithItems; onEdi
         </button>
         <div className="flex shrink-0 items-center gap-1.5">
           <span className="money font-semibold">{formatCentavos(tx.amount)}</span>
-          <form action={deleteExpenseAction}>
-            <input type="hidden" name="id" value={tx.id} />
-            <input type="hidden" name="categoryId" value={tx.categoryId} />
-            <button
-              type="submit"
-              aria-label="Delete"
-              className="grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition hover:bg-[var(--field)] hover:text-danger active:scale-90"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-                strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
-                <path d="M3 6h18" />
-                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                <path d="M10 11v6M14 11v6" />
-              </svg>
-            </button>
-          </form>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={pending}
+            aria-label="Delete"
+            className="grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition hover:bg-[var(--field)] hover:text-danger active:scale-90 disabled:opacity-60"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+              strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
+              <path d="M3 6h18" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M10 11v6M14 11v6" />
+            </svg>
+          </button>
         </div>
       </div>
 

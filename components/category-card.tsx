@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import type { Category } from "@/lib/db/schema";
+import type { LocalCategory } from "@/lib/local/types";
 import { formatCentavos } from "@/lib/money";
-import { MarkPaidButton, type MarkPaidAction } from "@/components/mark-paid-button";
+import { MarkPaidButton } from "@/components/mark-paid-button";
 
 /**
  * Home category card: a tinted emoji tile (carrying the category colour), the
@@ -21,12 +21,11 @@ import { MarkPaidButton, type MarkPaidAction } from "@/components/mark-paid-butt
  * exposes its `/category/[id]` href for the existing card test.
  */
 export function CategoryCard({
-  category, spent, ym, markPaidAction,
+  category, spent, ym,
 }: {
-  category: Category;
+  category: LocalCategory;
   spent: number;
   ym?: { year: number; month: number };
-  markPaidAction?: MarkPaidAction;
 }) {
   const budget = category.monthlyBudget;
   const hasBudget = budget > 0;
@@ -34,7 +33,7 @@ export function CategoryCard({
   const over = hasBudget && spent > budget;
   const pct = hasBudget ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
   const fill = over ? "var(--danger)" : category.color;
-  const showPaid = hasBudget && remaining > 0 && ym != null && markPaidAction != null;
+  const showPaid = hasBudget && remaining > 0 && ym != null;
 
   return (
     <div className="surface group relative block overflow-hidden p-4 transition-transform duration-150 active:scale-[0.985]">
@@ -94,7 +93,6 @@ export function CategoryCard({
           </span>
           {showPaid ? (
             <MarkPaidButton
-              action={markPaidAction}
               categoryId={category.id}
               categoryName={category.name}
               remaining={remaining}

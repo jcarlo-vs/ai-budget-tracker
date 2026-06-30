@@ -29,6 +29,13 @@
       "when": 1782821908864,
       "tag": "0003_gifted_justice",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782827292604,
+      "tag": "0004_offline_uuid",
+      "breakpoints": true
     }
   ]
 }

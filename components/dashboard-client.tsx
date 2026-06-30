@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Fab } from "@/components/fab";
 import { ExpenseSheet } from "@/components/expense-sheet";
-import type { Category } from "@/lib/db/schema";
+import type { LocalCategory } from "@/lib/local/types";
 
-export function DashboardClient({ categories, defaultDate }: { categories: Category[]; defaultDate: string }) {
+export function DashboardClient({ categories, defaultDate }: { categories: LocalCategory[]; defaultDate: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>

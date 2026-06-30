@@ -4,12 +4,12 @@ import { useState } from "react";
 import { Fab } from "@/components/fab";
 import { ExpenseSheet } from "@/components/expense-sheet";
 import { TransactionRow } from "@/components/transaction-row";
-import type { Category } from "@/lib/db/schema";
-import type { TransactionWithItems } from "@/lib/data/transactions";
+import type { LocalCategory } from "@/lib/local/types";
+import type { TransactionWithItems } from "@/lib/local/data/transactions";
 
 export function CategoryDetailClient({
   category, transactions, defaultDate,
-}: { category: Category; transactions: TransactionWithItems[]; defaultDate: string }) {
+}: { category: LocalCategory; transactions: TransactionWithItems[]; defaultDate: string }) {
   const [open, setOpen] = useState(false);
   const [editTx, setEditTx] = useState<TransactionWithItems | undefined>(undefined);
 

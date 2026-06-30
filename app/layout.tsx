@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import { BottomNav } from "@/components/bottom-nav";
 import { RouteProgress } from "@/components/route-progress";
+import { LockGate } from "@/components/lock-gate";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,8 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-dvh safe-top">
         <RouteProgress />
-        {children}
-        <BottomNav />
+        <LockGate>
+          {children}
+          <BottomNav />
+        </LockGate>
         <Toaster position="top-center" richColors theme="dark" />
       </body>
     </html>

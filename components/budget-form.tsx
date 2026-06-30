@@ -1,10 +1,9 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { setMonthlyBudgetAction, clearMonthlyBudgetAction } from "@/app/actions/budget";
-import { formatCentavos } from "@/lib/money";
+import { setMonthlyBudget, deleteMonthlyBudget } from "@/lib/local/data/budgets";
+import { formatCentavos, parseAmountToCentavos } from "@/lib/money";
 import { MoneyInput } from "@/components/money-input";
 
 export function BudgetForm({
@@ -13,7 +12,6 @@ export function BudgetForm({
   year: number; month: number; label: string;
   currentAmount: number | null; suggested: number | null;
 }) {
-  const router = useRouter();
   const [pending, startSave] = useTransition();
   const [clearing, startClear] = useTransition();
   const prefill =
@@ -23,6 +21,34 @@ export function BudgetForm({
         ? formatCentavos(suggested, { symbol: false })
         : "";
 
+  function onSave(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const amount = parseAmountToCentavos(String(new FormData(e.currentTarget).get("amount") ?? ""));
+    if (amount == null || amount < 0) {
+      toast.error("Enter a valid budget amount");
+      return;
+    }
+    startSave(async () => {
+      try {
+        await setMonthlyBudget({ year, month }, amount);
+        toast.success(`Budget saved for ${label}`);
+      } catch {
+        toast.error("Could not save budget");
+      }
+    });
+  }
+
+  function onClear() {
+    startClear(async () => {
+      try {
+        await deleteMonthlyBudget({ year, month });
+        toast.success(`Budget cleared for ${label}`);
+      } catch {
+        toast.error("Could not clear budget");
+      }
+    });
+  }
+
   return (
     <div className="surface space-y-3 p-5">
       <div className="flex items-center justify-between">
@@ -30,22 +56,7 @@ export function BudgetForm({
         <span className="text-sm text-muted-foreground">{label}</span>
       </div>
 
-      <form
-        action={(fd) =>
-          startSave(async () => {
-            const res = await setMonthlyBudgetAction({ ok: true }, fd);
-            if (res.ok) {
-              toast.success(`Budget saved for ${label}`);
-              router.refresh();
-            } else {
-              toast.error(res.error);
-            }
-          })
-        }
-        className="flex items-stretch gap-2"
-      >
-        <input type="hidden" name="year" value={year} />
-        <input type="hidden" name="month" value={month} />
+      <form onSubmit={onSave} className="flex items-stretch gap-2">
         <div className="relative flex-1">
           <span className="money pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-muted-foreground">
             ₱
@@ -70,29 +81,14 @@ export function BudgetForm({
           <span />
         )}
         {currentAmount != null && (
-          <form
-            action={(fd) =>
-              startClear(async () => {
-                const res = await clearMonthlyBudgetAction({ ok: true }, fd);
-                if (res.ok) {
-                  toast.success(`Budget cleared for ${label}`);
-                  router.refresh();
-                } else {
-                  toast.error(res.error);
-                }
-              })
-            }
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={clearing}
+            className="text-xs text-muted-foreground underline-offset-2 transition hover:text-danger hover:underline disabled:opacity-60"
           >
-            <input type="hidden" name="year" value={year} />
-            <input type="hidden" name="month" value={month} />
-            <button
-              type="submit"
-              disabled={clearing}
-              className="text-xs text-muted-foreground underline-offset-2 transition hover:text-danger hover:underline disabled:opacity-60"
-            >
-              {clearing ? "Clearing…" : "Clear budget"}
-            </button>
-          </form>
+            {clearing ? "Clearing…" : "Clear budget"}
+          </button>
         )}
       </div>
     </div>

@@ -1,38 +1,80 @@
-import { db } from "@/lib/db/client";
-import { listCategories } from "@/lib/data/categories";
-import { getMonthlyBudget, getRecentBudgetBefore } from "@/lib/data/budgets";
+"use client";
+
+import { Suspense, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
+import { useLiveQuery } from "dexie-react-hooks";
+import { toast } from "sonner";
+import { listCategories } from "@/lib/local/data/categories";
+import { getMonthlyBudget, getRecentBudgetBefore } from "@/lib/local/data/budgets";
 import { getYearMonth, parseYearMonth, formatMonthLabel } from "@/lib/month";
 import { CategoryManager } from "@/components/category-manager";
 import { BudgetForm } from "@/components/budget-form";
 import { MonthSwitcher } from "@/components/month-switcher";
+import { SyncStatusChip } from "@/components/sync-status";
+import { syncNow } from "@/lib/sync/client";
+import { localDb } from "@/lib/local/db";
 import { logoutAction } from "@/app/actions/auth";
+import { lockApp } from "@/lib/local/lock";
+import { Skeleton } from "@/components/skeleton";
 
-export default async function CategoriesPage({
-  searchParams,
-}: { searchParams: Promise<{ y?: string; m?: string }> }) {
-  const sp = await searchParams;
-  const ym = parseYearMonth(sp.y, sp.m, getYearMonth(new Date()));
-  const [categories, currentAmount, suggested] = await Promise.all([
-    listCategories(db),
-    getMonthlyBudget(db, ym),
-    getRecentBudgetBefore(db, ym),
-  ]);
+function ManageInner() {
+  const sp = useSearchParams();
+  const ym = parseYearMonth(sp.get("y") ?? undefined, sp.get("m") ?? undefined, getYearMonth(new Date()));
+
+  const data = useLiveQuery(
+    async () => {
+      const [categories, currentAmount, suggested] = await Promise.all([
+        listCategories(),
+        getMonthlyBudget(ym),
+        getRecentBudgetBefore(ym),
+      ]);
+      return { categories, currentAmount, suggested };
+    },
+    [ym.year, ym.month],
+  );
+
+  async function onLogout() {
+    try {
+      await logoutAction();
+    } catch {
+      // Offline: can't clear the server cookie, but still lock the device.
+    }
+    await lockApp();
+  }
+
+  if (!data) {
+    return (
+      <main className="mx-auto max-w-md space-y-6 px-4 pb-28 pt-6">
+        <Skeleton className="h-8 w-28" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      </main>
+    );
+  }
+
+  const { categories, currentAmount, suggested } = data;
 
   return (
     <main className="mx-auto max-w-md space-y-6 px-4 pb-28 pt-6">
       <div className="reveal flex items-center justify-between">
         <h1 className="display text-2xl font-bold tracking-tight">Manage</h1>
-        <form action={logoutAction}>
-          <button className="flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-              strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <path d="m16 17 5-5-5-5" />
-              <path d="M21 12H9" />
-            </svg>
-            Log out
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={onLogout}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="m16 17 5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+          Log out
+        </button>
       </div>
 
       <div className="reveal space-y-3" style={{ animationDelay: "60ms" }}>
@@ -55,5 +97,13 @@ export default async function CategoriesPage({
         <CategoryManager categories={categories} />
       </div>
     </main>
+  );
+}
+
+export default function CategoriesPage() {
+  return (
+    <Suspense>
+      <ManageInner />
+    </Suspense>
   );
 }

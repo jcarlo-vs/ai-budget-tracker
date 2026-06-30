@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
+
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+});
 
 const nextConfig: NextConfig = {
   // Allow accessing the dev server from this machine's LAN IP (e.g. from a phone
@@ -7,4 +14,4 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.100.112"],
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

@@ -1,22 +1,46 @@
-import { db } from "@/lib/db/client";
-import { getSavings } from "@/lib/data/savings";
-import { getMonthlyBudget } from "@/lib/data/budgets";
-import { getCategoriesWithMonthTotals } from "@/lib/data/overview";
+"use client";
+
+import { useLiveQuery } from "dexie-react-hooks";
+import { getSavings } from "@/lib/local/data/savings";
+import { getMonthlyBudget } from "@/lib/local/data/budgets";
+import { getCategoriesWithMonthTotals } from "@/lib/local/data/overview";
 import { getYearMonth, formatMonthLabel } from "@/lib/month";
 import { formatCentavos } from "@/lib/money";
+import { Skeleton } from "@/components/skeleton";
 
-// Per-request render: reads the DB and "today"; never prerender/cache at build.
-export const dynamic = "force-dynamic";
-
-export default async function SavingsPage() {
+export default function SavingsPage() {
   const now = getYearMonth(new Date());
-  const [{ total, months }, currentBudget, rows] = await Promise.all([
-    getSavings(db, now),
-    getMonthlyBudget(db, now),
-    getCategoriesWithMonthTotals(db, now),
-  ]);
-  const currentSpent = rows.reduce((acc, r) => acc + r.spent, 0);
-  const projected = currentBudget != null ? currentBudget - currentSpent : null;
+
+  const data = useLiveQuery(
+    async () => {
+      const [savings, currentBudget, rows] = await Promise.all([
+        getSavings(now),
+        getMonthlyBudget(now),
+        getCategoriesWithMonthTotals(now),
+      ]);
+      const currentSpent = rows.reduce((acc, r) => acc + r.spent, 0);
+      const projected = currentBudget != null ? currentBudget - currentSpent : null;
+      return { total: savings.total, months: savings.months, projected };
+    },
+    [now.year, now.month],
+  );
+
+  if (!data) {
+    return (
+      <main className="mx-auto max-w-md space-y-5 px-4 pb-28 pt-6">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-36 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <div className="space-y-2 pt-2">
+          <Skeleton className="h-[68px] w-full" />
+          <Skeleton className="h-[68px] w-full" />
+          <Skeleton className="h-[68px] w-full" />
+        </div>
+      </main>
+    );
+  }
+
+  const { total, months, projected } = data;
 
   return (
     <main className="mx-auto max-w-md space-y-5 px-4 pb-28 pt-6">

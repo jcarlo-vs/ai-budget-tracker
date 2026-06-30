@@ -1,6 +1,4 @@
-import { sql } from "drizzle-orm";
-import { monthlyBudgets, transactions } from "@/lib/db/schema";
-import type { DB } from "@/lib/db/types";
+import { localDb } from "@/lib/local/db";
 import { monthKey, type YearMonth } from "@/lib/month";
 
 export interface SavingsMonth {
@@ -12,23 +10,24 @@ export interface SavingsMonth {
 }
 
 export async function getSavings(
-  db: DB,
   currentYm: YearMonth,
 ): Promise<{ total: number; months: SavingsMonth[] }> {
-  const budgets = await db.select().from(monthlyBudgets);
-  const sums = await db
-    .select({
-      period: sql<string>`to_char(${transactions.occurredOn}, 'YYYY-MM')`,
-      total: sql<number>`coalesce(sum(${transactions.amount}), 0)::int`,
-    })
-    .from(transactions)
-    .groupBy(sql`to_char(${transactions.occurredOn}, 'YYYY-MM')`);
+  const [budgets, txns] = await Promise.all([
+    localDb.monthlyBudgets.toArray(),
+    localDb.transactions.toArray(),
+  ]);
 
-  const spentByKey = new Map(sums.map((s) => [s.period, Number(s.total)]));
+  // Sum active spend keyed by the transaction's YYYY-MM.
+  const spentByKey = new Map<string, number>();
+  for (const t of txns) {
+    if (t.deletedAt != null) continue;
+    const key = t.occurredOn.slice(0, 7); // "YYYY-MM" from a YYYY-MM-DD date
+    spentByKey.set(key, (spentByKey.get(key) ?? 0) + t.amount);
+  }
+
   const cur = currentYm.year * 12 + currentYm.month;
-
   const months: SavingsMonth[] = budgets
-    .filter((b) => b.year * 12 + b.month < cur)
+    .filter((b) => b.deletedAt == null && b.year * 12 + b.month < cur)
     .map((b) => {
       const spent = spentByKey.get(monthKey({ year: b.year, month: b.month })) ?? 0;
       return { year: b.year, month: b.month, budget: b.amount, spent, saved: b.amount - spent };

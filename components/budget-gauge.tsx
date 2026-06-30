@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import { formatCentavos } from "@/lib/money";
 
 /**
  * Circular "Safe-to-Spend" gauge (Cleo-style), pure inline SVG so it can be a
@@ -26,7 +25,7 @@ export function BudgetGauge({
   const stroke = 16;
   // Inset the ring so its drop-shadow glow has room inside the SVG box and isn't
   // clipped to a rectangle at the edges.
-  const pad = 14;
+  const pad = 11;
   const r = (size - stroke) / 2 - pad;
   const c = 2 * Math.PI * r;
   const offset = c * (1 - fraction);
@@ -118,15 +117,7 @@ export function BudgetGauge({
           >
             {amountText}
           </span>
-          <span className="mt-2 text-xs text-muted-foreground">
-            {usedPct}% of {formatCentavos(budget)} used
-          </span>
-          {showTick && (
-            <span className="mt-1.5 inline-flex items-center gap-1.5 text-[0.625rem] text-muted-foreground">
-              <span className="inline-block h-2.5 w-[2px] rounded-full" style={{ background: "#ff453a" }} />
-              allocated {formatCentavos(allocated)}
-            </span>
-          )}
+          <span className="mt-1.5 text-xs text-muted-foreground">{usedPct}% used</span>
         </div>
       </div>
     </div>

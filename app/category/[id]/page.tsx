@@ -1,36 +1,64 @@
-import type { CSSProperties } from "react";
-import { notFound } from "next/navigation";
+"use client";
+
+import { Suspense, type CSSProperties } from "react";
 import Link from "next/link";
-import { db } from "@/lib/db/client";
-import { listCategories } from "@/lib/data/categories";
-import { listTransactions, getItemsByTransaction, type TransactionWithItems } from "@/lib/data/transactions";
+import { useParams, useSearchParams } from "next/navigation";
+import { useLiveQuery } from "dexie-react-hooks";
+import { listCategories } from "@/lib/local/data/categories";
+import { listTransactions, getItemsByTransaction, type TransactionWithItems } from "@/lib/local/data/transactions";
 import { getYearMonth, parseYearMonth } from "@/lib/month";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { BudgetBar } from "@/components/budget-bar";
 import { CategoryDetailClient } from "@/components/category-detail-client";
 import { MarkPaidButton } from "@/components/mark-paid-button";
-import { markCategoryPaidAction } from "@/app/actions/expenses";
+import { Skeleton } from "@/components/skeleton";
 
-export default async function CategoryPage({
-  params, searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ y?: string; m?: string }>;
-}) {
-  const { id } = await params;
-  const sp = await searchParams;
-  const categoryId = Number(id);
-  if (!Number.isInteger(categoryId)) notFound();
+function CategoryInner() {
+  const params = useParams<{ id: string }>();
+  const id = params.id;
+  const sp = useSearchParams();
+  const ym = parseYearMonth(sp.get("y") ?? undefined, sp.get("m") ?? undefined, getYearMonth(new Date()));
 
-  const category = (await listCategories(db)).find((c) => c.id === categoryId);
-  if (!category) notFound();
+  const data = useLiveQuery(
+    async () => {
+      const category = (await listCategories()).find((c) => c.id === id);
+      if (!category) return { notFound: true as const };
+      const txns = await listTransactions({ categoryId: id, ym });
+      const itemsByTx = await getItemsByTransaction(txns.map((t) => t.id));
+      const transactions: TransactionWithItems[] = txns.map((t) => ({ ...t, items: itemsByTx.get(t.id) ?? [] }));
+      const spent = txns.reduce((a, t) => a + t.amount, 0);
+      return { notFound: false as const, category, transactions, spent };
+    },
+    [id, ym.year, ym.month],
+  );
 
-  const now = getYearMonth(new Date());
-  const ym = parseYearMonth(sp.y, sp.m, now);
-  const txns = await listTransactions(db, { categoryId, ym });
-  const spent = txns.reduce((a, t) => a + t.amount, 0);
-  const itemsByTx = await getItemsByTransaction(db, txns.map((t) => t.id));
-  const txnsWithItems: TransactionWithItems[] = txns.map((t) => ({ ...t, items: itemsByTx.get(t.id) ?? [] }));
+  if (!data) {
+    return (
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-28 pt-6">
+        <Skeleton className="h-5 w-20" />
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-11 w-full" />
+        <div className="space-y-2 pt-1">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      </main>
+    );
+  }
+
+  if (data.notFound) {
+    return (
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-28 pt-6">
+        <div className="surface flex flex-col items-center gap-3 px-6 py-12 text-center">
+          <span className="text-3xl">🔍</span>
+          <p className="text-sm text-muted-foreground">Category not found.</p>
+          <Link href="/" className="text-sm font-medium text-accent">Back home</Link>
+        </div>
+      </main>
+    );
+  }
+
+  const { category, transactions, spent } = data;
   const canMarkPaid = category.monthlyBudget > 0 && spent < category.monthlyBudget;
   const defaultDate = new Date().toISOString().slice(0, 10);
 
@@ -55,8 +83,7 @@ export default async function CategoryPage({
           <span className="display min-w-0 flex-1 truncate text-xl font-semibold tracking-tight">{category.name}</span>
           {canMarkPaid && (
             <MarkPaidButton
-              action={markCategoryPaidAction}
-              categoryId={categoryId}
+              categoryId={category.id}
               categoryName={category.name}
               remaining={category.monthlyBudget - spent}
               year={ym.year}
@@ -69,10 +96,18 @@ export default async function CategoryPage({
       </header>
 
       <div className="reveal" style={{ animationDelay: "100ms" }}>
-        <MonthSwitcher ym={ym} basePath={`/category/${categoryId}`} />
+        <MonthSwitcher ym={ym} basePath={`/category/${category.id}`} />
       </div>
 
-      <CategoryDetailClient category={category} transactions={txnsWithItems} defaultDate={defaultDate} />
+      <CategoryDetailClient category={category} transactions={transactions} defaultDate={defaultDate} />
     </main>
+  );
+}
+
+export default function CategoryPage() {
+  return (
+    <Suspense>
+      <CategoryInner />
+    </Suspense>
   );
 }

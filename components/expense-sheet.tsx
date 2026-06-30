@@ -1,24 +1,23 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sheet } from "@/components/sheet";
-import { addExpenseAction, updateExpenseAction } from "@/app/actions/expenses";
+import { addExpense, updateExpense } from "@/lib/local/data/transactions";
 import { formatCentavos, parseAmountToCentavos } from "@/lib/money";
 import { MoneyInput, groupThousands } from "@/components/money-input";
 import { PAYMENT_METHODS } from "@/lib/payment";
-import type { Category, Transaction, ExpenseItem } from "@/lib/db/schema";
+import type { ExpenseInput, ItemInput } from "@/lib/schemas";
+import type { LocalCategory, LocalTransaction, LocalExpenseItem } from "@/lib/local/types";
 
 type ItemRow = { id: number; name: string; amount: string };
 
 export function ExpenseSheet({
   open, onClose, categories, defaultDate, presetCategoryId, editTx, editItems,
 }: {
-  open: boolean; onClose: () => void; categories: Category[];
-  defaultDate: string; presetCategoryId?: number; editTx?: Transaction; editItems?: ExpenseItem[];
+  open: boolean; onClose: () => void; categories: LocalCategory[];
+  defaultDate: string; presetCategoryId?: string; editTx?: LocalTransaction; editItems?: LocalExpenseItem[];
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const editing = Boolean(editTx);
   const [method, setMethod] = useState<string>(editTx?.paymentMethod ?? "cash");
@@ -40,13 +39,6 @@ export function ExpenseSheet({
   const addRow = () => setRows((rs) => [...rs, makeRow()]);
 
   const totalCentavos = rows.reduce((acc, r) => acc + (parseAmountToCentavos(r.amount) ?? 0), 0);
-  const itemsJson = itemized
-    ? JSON.stringify(
-        rows
-          .map((r) => ({ name: r.name.trim(), amount: parseAmountToCentavos(r.amount) ?? 0 }))
-          .filter((r) => r.name && r.amount > 0),
-      )
-    : "[]";
 
   const submitLabel = editing
     ? "Save changes"
@@ -54,28 +46,48 @@ export function ExpenseSheet({
       ? `Add expense ${formatCentavos(totalCentavos)}`
       : "Add expense";
 
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+
+    const items: ItemInput[] = itemized
+      ? rows
+          .map((r) => ({ name: r.name.trim(), amount: parseAmountToCentavos(r.amount) ?? 0 }))
+          .filter((r) => r.name && r.amount > 0)
+      : [];
+    const amount = itemized
+      ? items.reduce((acc, i) => acc + i.amount, 0)
+      : parseAmountToCentavos(String(fd.get("amount") ?? "")) ?? 0;
+
+    const categoryId = String(fd.get("categoryId") ?? "");
+    const occurredOn = String(fd.get("occurredOn") ?? "");
+    if (!categoryId || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(occurredOn)) {
+      toast.error("Enter a valid amount and category");
+      return;
+    }
+    const input: ExpenseInput = {
+      categoryId,
+      amount,
+      description: String(fd.get("description") ?? ""),
+      occurredOn,
+      paymentMethod: method as ExpenseInput["paymentMethod"],
+    };
+
+    startTransition(async () => {
+      try {
+        if (editing) await updateExpense(editTx!.id, input, items);
+        else await addExpense(input, items);
+        toast.success(editing ? "Expense updated" : "Expense added");
+        onClose();
+      } catch {
+        toast.error("Something went wrong");
+      }
+    });
+  }
+
   return (
     <Sheet open={open} onClose={onClose} title={editing ? "Edit expense" : "Add expense"}>
-      <form
-        action={(fd) =>
-          startTransition(async () => {
-            const res = editing
-              ? await updateExpenseAction({ ok: true }, fd)
-              : await addExpenseAction({ ok: true }, fd);
-            if (res.ok) {
-              toast.success(editing ? "Expense updated" : "Expense added");
-              router.refresh();
-              onClose();
-            } else {
-              toast.error(res.error);
-            }
-          })
-        }
-        className="space-y-3"
-      >
-        {editTx && <input type="hidden" name="id" value={editTx.id} />}
-        <input type="hidden" name="items" value={itemsJson} />
-
+      <form onSubmit={onSubmit} className="space-y-3">
         {/* Quick vs Itemize mode */}
         <div className="grid grid-cols-2 gap-2" role="group" aria-label="Expense mode">
           {[

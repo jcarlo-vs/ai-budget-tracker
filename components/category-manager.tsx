@@ -1,44 +1,74 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { formatCentavos } from "@/lib/money";
+import { formatCentavos, parseAmountToCentavos } from "@/lib/money";
 import { MoneyInput } from "@/components/money-input";
 import { ColorPicker } from "@/components/color-picker";
-import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
-import type { ActionResult } from "@/lib/action-result";
-import type { Category } from "@/lib/db/schema";
+import { createCategory, updateCategory, deleteCategory } from "@/lib/local/data/categories";
+import { categorySchema } from "@/lib/schemas";
+import type { LocalCategory } from "@/lib/local/types";
 
-export function CategoryManager({ categories }: { categories: Category[] }) {
-  const router = useRouter();
-  const [confirmId, setConfirmId] = useState<number | null>(null);
-  const [editId, setEditId] = useState<number | null>(null);
+function readCategoryForm(form: FormData) {
+  const budget = parseAmountToCentavos(String(form.get("monthlyBudget") ?? "0")) ?? 0;
+  return categorySchema.safeParse({
+    name: String(form.get("name") ?? ""),
+    emoji: String(form.get("emoji") ?? "📦"),
+    color: String(form.get("color") ?? "#0a84ff"),
+    monthlyBudget: budget,
+  });
+}
+
+export function CategoryManager({ categories }: { categories: LocalCategory[] }) {
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
   const [createKey, setCreateKey] = useState(0);
 
-  async function submit(
-    action: (p: ActionResult, f: FormData) => Promise<ActionResult>,
-    fd: FormData,
-    onOk?: () => void,
-  ) {
-    const res = await action({ ok: true }, fd);
-    if (res.ok) {
+  async function onCreate(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const parsed = readCategoryForm(new FormData(e.currentTarget));
+    if (!parsed.success) {
+      toast.error("Please check the category details");
+      return;
+    }
+    try {
+      await createCategory(parsed.data);
       toast.success("Saved");
-      onOk?.();
-      router.refresh();
-    } else {
-      toast.error(res.error);
+      setCreateKey((k) => k + 1);
+    } catch {
+      toast.error("Could not save category");
+    }
+  }
+
+  async function onUpdate(id: string, e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const parsed = readCategoryForm(new FormData(e.currentTarget));
+    if (!parsed.success) {
+      toast.error("Please check the category details");
+      return;
+    }
+    try {
+      await updateCategory(id, parsed.data);
+      toast.success("Saved");
+      setEditId(null);
+    } catch {
+      toast.error("Could not save category");
+    }
+  }
+
+  async function onDelete(id: string) {
+    try {
+      await deleteCategory(id);
+      setConfirmId(null);
+    } catch {
+      toast.error("Could not delete category");
     }
   }
 
   return (
     <div className="space-y-6">
       {/* ── Create ─────────────────────────────────────────────────────────── */}
-      <form
-        key={createKey}
-        action={(fd) => submit(createCategoryAction, fd, () => setCreateKey((k) => k + 1))}
-        className="surface space-y-4 p-5"
-      >
+      <form key={createKey} onSubmit={onCreate} className="surface space-y-4 p-5">
         <span className="eyebrow">New category</span>
         <input name="name" placeholder="Name" className="field w-full px-4 py-3" />
         <div className="flex items-stretch gap-2.5">
@@ -75,11 +105,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
             return (
               <div key={c.id} className="surface p-4">
                 {editing ? (
-                  <form
-                    action={(fd) => submit(updateCategoryAction, fd, () => setEditId(null))}
-                    className="space-y-3"
-                  >
-                    <input type="hidden" name="id" value={c.id} />
+                  <form onSubmit={(e) => onUpdate(c.id, e)} className="space-y-3">
                     <div className="flex items-stretch gap-2.5">
                       <input name="emoji" defaultValue={c.emoji} aria-label="Emoji" className="field w-16 shrink-0 px-2 py-3 text-center text-xl" />
                       <input name="name" defaultValue={c.name} aria-label="Name" className="field flex-1 px-4 py-3" />
@@ -132,41 +158,28 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
                           <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
                         </svg>
                       </button>
-                      <form
-                        action={async (fd) => {
-                          if (confirmId !== c.id) return;
-                          try {
-                            await deleteCategoryAction(fd);
-                            setConfirmId(null);
-                          } catch {
-                            toast.error("Could not delete category");
-                          }
-                        }}
+                      <button
+                        type="button"
+                        onClick={() => (confirming ? onDelete(c.id) : setConfirmId(c.id))}
+                        aria-label={confirming ? `Confirm delete ${c.name}` : `Delete ${c.name}`}
+                        className={
+                          confirming
+                            ? "rounded-xl bg-danger/15 px-3 py-2.5 text-xs font-semibold text-danger ring-1 ring-inset ring-[color-mix(in_srgb,var(--danger)_40%,transparent)] transition active:scale-95"
+                            : "grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition hover:bg-[var(--field)] hover:text-danger active:scale-90"
+                        }
                       >
-                        <input type="hidden" name="id" value={c.id} />
-                        <button
-                          type={confirming ? "submit" : "button"}
-                          onClick={() => setConfirmId(confirming ? null : c.id)}
-                          aria-label={confirming ? `Confirm delete ${c.name}` : `Delete ${c.name}`}
-                          className={
-                            confirming
-                              ? "rounded-xl bg-danger/15 px-3 py-2.5 text-xs font-semibold text-danger ring-1 ring-inset ring-[color-mix(in_srgb,var(--danger)_40%,transparent)] transition active:scale-95"
-                              : "grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition hover:bg-[var(--field)] hover:text-danger active:scale-90"
-                          }
-                        >
-                          {confirming ? (
-                            "Confirm delete"
-                          ) : (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-                              strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
-                              <path d="M3 6h18" />
-                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                              <path d="M10 11v6M14 11v6" />
-                            </svg>
-                          )}
-                        </button>
-                      </form>
+                        {confirming ? (
+                          "Confirm delete"
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                            strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                            <path d="M10 11v6M14 11v6" />
+                          </svg>
+                        )}
+                      </button>
                     </div>
                   </div>
                 )}

@@ -1,6 +1,19 @@
 import { SignJWT, jwtVerify } from "jose";
 
 export const SESSION_COOKIE = "bt_session";
+export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days, in seconds
+
+// Shared cookie options so the login action and the sliding-session refresh on
+// /api/sync issue an identical cookie (only the value/expiry changes).
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  };
+}
 
 function key(secret: string): Uint8Array {
   return new TextEncoder().encode(secret);

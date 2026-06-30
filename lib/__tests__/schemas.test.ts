@@ -15,14 +15,18 @@ describe("categorySchema", () => {
 });
 
 describe("expenseSchema", () => {
+  const cat = "11111111-2222-3333-4444-555555555555";
   it("accepts valid input", () => {
-    const r = expenseSchema.safeParse({ categoryId: 1, amount: 12500, description: "Lunch", occurredOn: "2026-06-30" });
+    const r = expenseSchema.safeParse({ categoryId: cat, amount: 12500, description: "Lunch", occurredOn: "2026-06-30" });
     expect(r.success).toBe(true);
   });
+  it("rejects empty categoryId", () => {
+    expect(expenseSchema.safeParse({ categoryId: "", amount: 100, description: "", occurredOn: "2026-06-30" }).success).toBe(false);
+  });
   it("rejects zero amount", () => {
-    expect(expenseSchema.safeParse({ categoryId: 1, amount: 0, description: "", occurredOn: "2026-06-30" }).success).toBe(false);
+    expect(expenseSchema.safeParse({ categoryId: cat, amount: 0, description: "", occurredOn: "2026-06-30" }).success).toBe(false);
   });
   it("rejects bad date", () => {
-    expect(expenseSchema.safeParse({ categoryId: 1, amount: 100, description: "", occurredOn: "30-06-2026" }).success).toBe(false);
+    expect(expenseSchema.safeParse({ categoryId: cat, amount: 100, description: "", occurredOn: "30-06-2026" }).success).toBe(false);
   });
 });
