@@ -10,10 +10,30 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
   );
 }
 
-export function MonthSwitcher({ ym, basePath }: { ym: YearMonth; basePath: string }) {
+export function MonthSwitcher({
+  ym,
+  basePath,
+  params,
+}: {
+  ym: YearMonth;
+  basePath: string;
+  /** Extra query params to preserve on the URL (e.g. `{ id }` for the category page). */
+  params?: Record<string, string | number>;
+}) {
   const prev = shiftMonth(ym, -1);
   const next = shiftMonth(ym, 1);
-  const href = (m: YearMonth) => `${basePath}?y=${m.year}&m=${m.month}`;
+  // Compose the query string with URLSearchParams so it stays correct even when
+  // basePath already carries params (e.g. the category page passes `{ id }`):
+  // `/category` + `{ id }` -> `/category?id=…&y=…&m=…` (never a broken `?id=…?y=…`).
+  const href = (m: YearMonth) => {
+    const search = new URLSearchParams();
+    if (params) {
+      for (const [key, value] of Object.entries(params)) search.set(key, String(value));
+    }
+    search.set("y", String(m.year));
+    search.set("m", String(m.month));
+    return `${basePath}?${search.toString()}`;
+  };
   return (
     <div className="flex items-center justify-between">
       <Link

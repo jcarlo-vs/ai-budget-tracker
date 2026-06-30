@@ -2,7 +2,7 @@
 
 import { Suspense, type CSSProperties } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { listCategories } from "@/lib/local/data/categories";
 import { listTransactions, getItemsByTransaction, type TransactionWithItems } from "@/lib/local/data/transactions";
@@ -14,13 +14,13 @@ import { MarkPaidButton } from "@/components/mark-paid-button";
 import { Skeleton } from "@/components/skeleton";
 
 function CategoryInner() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
   const sp = useSearchParams();
+  const id = sp.get("id");
   const ym = parseYearMonth(sp.get("y") ?? undefined, sp.get("m") ?? undefined, getYearMonth(new Date()));
 
   const data = useLiveQuery(
     async () => {
+      if (!id) return { notFound: true as const };
       const category = (await listCategories()).find((c) => c.id === id);
       if (!category) return { notFound: true as const };
       const txns = await listTransactions({ categoryId: id, ym });
@@ -96,7 +96,7 @@ function CategoryInner() {
       </header>
 
       <div className="reveal" style={{ animationDelay: "100ms" }}>
-        <MonthSwitcher ym={ym} basePath={`/category/${category.id}`} />
+        <MonthSwitcher ym={ym} basePath="/category" params={{ id: category.id }} />
       </div>
 
       <CategoryDetailClient category={category} transactions={transactions} defaultDate={defaultDate} />

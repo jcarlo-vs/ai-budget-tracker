@@ -11,6 +11,6 @@ describe("CategoryCard", () => {
     expect(screen.getByText("Food")).toBeInTheDocument();
     expect(screen.getByText("🍜")).toBeInTheDocument();
     expect(screen.getByText(/₱200\.00/)).toBeInTheDocument();
-    expect(screen.getByRole("link")).toHaveAttribute("href", "/category/1");
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/category?id=1");
   });
 });

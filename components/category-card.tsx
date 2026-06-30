@@ -17,8 +17,9 @@ import { MarkPaidButton } from "@/components/mark-paid-button";
  * category still has budget remaining.
  *
  * The spent amount is shown exactly once (top-right) so tests that query for
- * the formatted spent value resolve to a single element. The detail link still
- * exposes its `/category/[id]` href for the existing card test.
+ * the formatted spent value resolve to a single element. The detail link
+ * exposes its `/category?id=…` href for the existing card test (the detail page
+ * is a static `?id=` route so the service worker can precache it for offline).
  */
 export function CategoryCard({
   category, spent, ym,
@@ -38,7 +39,7 @@ export function CategoryCard({
   return (
     <div className="surface group relative block overflow-hidden p-4 transition-transform duration-150 active:scale-[0.985]">
       <Link
-        href={`/category/${category.id}`}
+        href={`/category?id=${category.id}`}
         aria-label={category.name}
         className="absolute inset-0 z-[1] rounded-[inherit]"
       />
