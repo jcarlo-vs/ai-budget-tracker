@@ -24,7 +24,10 @@ export function BudgetGauge({
 
   const size = 208;
   const stroke = 16;
-  const r = (size - stroke) / 2;
+  // Inset the ring so its drop-shadow glow has room inside the SVG box and isn't
+  // clipped to a rectangle at the edges.
+  const pad = 14;
+  const r = (size - stroke) / 2 - pad;
   const c = 2 * Math.PI * r;
   const offset = c * (1 - fraction);
 
