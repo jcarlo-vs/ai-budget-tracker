@@ -1,12 +1,15 @@
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db/client";
 import { listCategories } from "@/lib/data/categories";
-import { listTransactions } from "@/lib/data/transactions";
+import { listTransactions, getItemsByTransaction, type TransactionWithItems } from "@/lib/data/transactions";
 import { getYearMonth, parseYearMonth } from "@/lib/month";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { BudgetBar } from "@/components/budget-bar";
 import { CategoryDetailClient } from "@/components/category-detail-client";
+import { MarkPaidButton } from "@/components/mark-paid-button";
+import { markCategoryPaidAction } from "@/app/actions/expenses";
 
 export default async function CategoryPage({
   params, searchParams,
@@ -26,6 +29,9 @@ export default async function CategoryPage({
   const ym = parseYearMonth(sp.y, sp.m, now);
   const txns = await listTransactions(db, { categoryId, ym });
   const spent = txns.reduce((a, t) => a + t.amount, 0);
+  const itemsByTx = await getItemsByTransaction(db, txns.map((t) => t.id));
+  const txnsWithItems: TransactionWithItems[] = txns.map((t) => ({ ...t, items: itemsByTx.get(t.id) ?? [] }));
+  const canMarkPaid = category.monthlyBudget > 0 && spent < category.monthlyBudget;
   const defaultDate = new Date().toISOString().slice(0, 10);
 
   return (
@@ -39,30 +45,34 @@ export default async function CategoryPage({
       </Link>
 
       <header className="surface reveal relative overflow-hidden p-5" style={{ animationDelay: "50ms" }}>
-        <span
-          aria-hidden
-          className="absolute inset-y-4 left-0 w-1 rounded-full"
-          style={{ background: category.color, boxShadow: `0 0 12px -1px ${category.color}` }}
-        />
-        <div className="mb-4 flex items-center gap-3 pl-2">
+        <div className="mb-4 flex items-center gap-3.5">
           <span
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl ring-1 ring-inset ring-[var(--border)]"
-            style={{ background: `color-mix(in srgb, ${category.color} 22%, transparent)` }}
+            className="tile h-12 w-12 text-2xl"
+            style={{ "--tile": category.color } as CSSProperties}
           >
             {category.emoji}
           </span>
-          <span className="display text-xl font-semibold tracking-tight">{category.name}</span>
+          <span className="display min-w-0 flex-1 truncate text-xl font-semibold tracking-tight">{category.name}</span>
+          {canMarkPaid && (
+            <MarkPaidButton
+              action={markCategoryPaidAction}
+              categoryId={categoryId}
+              categoryName={category.name}
+              remaining={category.monthlyBudget - spent}
+              year={ym.year}
+              month={ym.month}
+              className="shrink-0"
+            />
+          )}
         </div>
-        <div className="pl-2">
-          <BudgetBar spent={spent} budget={category.monthlyBudget} color={category.color} />
-        </div>
+        <BudgetBar spent={spent} budget={category.monthlyBudget} color={category.color} />
       </header>
 
       <div className="reveal" style={{ animationDelay: "100ms" }}>
         <MonthSwitcher ym={ym} basePath={`/category/${categoryId}`} />
       </div>
 
-      <CategoryDetailClient category={category} transactions={txns} defaultDate={defaultDate} />
+      <CategoryDetailClient category={category} transactions={txnsWithItems} defaultDate={defaultDate} />
     </main>
   );
 }

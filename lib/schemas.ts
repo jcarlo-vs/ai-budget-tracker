@@ -15,6 +15,12 @@ export const expenseSchema = z.object({
   paymentMethod: z.enum(["gcash", "cash", "bank_qr"]).optional(),
 });
 
+export const itemSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  amount: z.number().int().positive(), // centavos
+});
+export type ItemInput = z.infer<typeof itemSchema>;
+
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type ExpenseInput = z.infer<typeof expenseSchema>;
 

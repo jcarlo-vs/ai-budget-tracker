@@ -18,7 +18,6 @@ export function BudgetGauge({
   budget: number;
   allocated: number;
 }) {
-  const remaining = budget - spent;
   const over = spent > budget;
   const fraction = budget > 0 ? Math.min(1, Math.max(0, spent / budget)) : 0;
   const usedPct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
@@ -44,9 +43,9 @@ export function BudgetGauge({
   const ty2 = size / 2 + tOut * Math.sin(tickAngle);
 
   // Whole-peso hero amount (centavos are noise at this size), with the font
-  // sized to the string length so it always fits inside the ring.
-  const amountValue = over ? spent - budget : remaining;
-  const amountText = `₱${Math.round(Math.abs(amountValue) / 100).toLocaleString("en-PH")}`;
+  // sized to the string length so it always fits inside the ring. Shows how
+  // much has been spent so far this month.
+  const amountText = `₱${Math.round(spent / 100).toLocaleString("en-PH")}`;
   const amountFontSize =
     amountText.length <= 7 ? "2rem"
     : amountText.length <= 9 ? "1.625rem"
@@ -106,7 +105,7 @@ export function BudgetGauge({
             className={`eyebrow ${over ? "text-danger" : ""}`}
             style={{ textTransform: "uppercase", letterSpacing: "0.04em" }}
           >
-            {over ? "Over budget" : "Safe to spend"}
+            Spent
           </span>
           <span
             className={`money display mt-1 max-w-[160px] whitespace-nowrap font-bold leading-none tracking-tight ${

@@ -64,23 +64,34 @@ export default async function SavingsPage() {
             </p>
           </div>
         ) : (
-          months.map((m, i) => (
-            <div
-              key={`${m.year}-${m.month}`}
-              className="surface reveal flex items-center justify-between p-4"
-              style={{ animationDelay: `${200 + i * 50}ms` }}
-            >
-              <div>
-                <div className="font-medium">{formatMonthLabel({ year: m.year, month: m.month })}</div>
-                <div className="money text-xs text-muted-foreground">
-                  {formatCentavos(m.spent)} of {formatCentavos(m.budget)}
+          months.map((m, i) => {
+            const positive = m.saved >= 0;
+            return (
+              <div
+                key={`${m.year}-${m.month}`}
+                className="surface reveal flex items-center justify-between gap-3 p-4"
+                style={{ animationDelay: `${200 + i * 50}ms` }}
+              >
+                <div className="min-w-0">
+                  <div className="truncate font-semibold leading-tight">{formatMonthLabel({ year: m.year, month: m.month })}</div>
+                  <div className="money mt-0.5 text-xs text-muted-foreground">
+                    {formatCentavos(m.spent)} of {formatCentavos(m.budget)}
+                  </div>
                 </div>
+                <span
+                  className="money shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold"
+                  style={{
+                    color: positive ? "var(--accent)" : "var(--danger)",
+                    background: positive
+                      ? "color-mix(in srgb, var(--accent) 14%, transparent)"
+                      : "color-mix(in srgb, var(--danger) 14%, transparent)",
+                  }}
+                >
+                  {positive ? "+" : "−"}{formatCentavos(Math.abs(m.saved))}
+                </span>
               </div>
-              <div className={`money font-semibold ${m.saved >= 0 ? "text-accent" : "text-danger"}`}>
-                {m.saved >= 0 ? "+" : "−"}{formatCentavos(Math.abs(m.saved))}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </section>
     </main>

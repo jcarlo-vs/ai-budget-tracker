@@ -84,7 +84,38 @@ body::before {
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   box-shadow:
     inset 0 0.5px 0 0 var(--card-hi),
-    0 18px 42px -24px rgba(0, 0, 0, 0.75);
+    inset 0 -0.5px 0 0 rgba(0, 0, 0, 0.22),
+    0 1px 1px -0.5px rgba(0, 0, 0, 0.3),
+    0 20px 44px -26px rgba(0, 0, 0, 0.8);
+}
+
+/* visionOS-style frosted glass for modals & sheets — a luminous, heavily
+   blurred translucent panel (clearly glass, not see-through) with a bright edge
+   highlight. Brighter fill + deeper blur than .surface so it reads as glass. */
+.glass-modal {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--foreground);
+  border: 0.5px solid rgba(255, 255, 255, 0.30);
+  border-radius: var(--radius);
+  backdrop-filter: blur(50px) saturate(190%);
+  -webkit-backdrop-filter: blur(50px) saturate(190%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.18),
+    0 30px 70px -24px rgba(0, 0, 0, 0.78);
+}
+
+/* Tinted emoji tile shared by every card — fill + hairline ring in the category
+   colour, with a glass top highlight. Drive the tint with `--tile: <color>`. */
+.tile {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--tile) 22%, transparent);
+  box-shadow:
+    inset 0 0 0 0.5px color-mix(in srgb, var(--tile) 50%, transparent),
+    inset 0 1px 0 0 color-mix(in srgb, #ffffff 28%, transparent);
 }
 
 /* Form field — lighter glass than a panel, with an accent focus halo. ≥16px to

@@ -9,6 +9,7 @@ import { BudgetGauge } from "@/components/budget-gauge";
 import { CategoryCard } from "@/components/category-card";
 import { DashboardClient } from "@/components/dashboard-client";
 import { ensureSeedCategories } from "@/lib/data/seed";
+import { markCategoryPaidAction } from "@/app/actions/expenses";
 
 export default async function DashboardPage({
   searchParams,
@@ -52,16 +53,20 @@ export default async function DashboardPage({
                 narrow phone. */}
             <div className="grid grid-cols-3 overflow-hidden rounded-2xl bg-[var(--field)] ring-1 ring-inset ring-[var(--border)]">
               {[
-                { label: "Budget", value: formatCentavos(budget) },
-                { label: "Allocated", value: formatCentavos(allocated) },
-                { label: "Spent", value: formatCentavos(spent) },
+                { label: "Budget", value: formatCentavos(budget), cls: "text-foreground" },
+                { label: "Allocated", value: formatCentavos(allocated), cls: "text-foreground" },
+                {
+                  label: budget - spent >= 0 ? "Remaining" : "Over by",
+                  value: formatCentavos(Math.abs(budget - spent)),
+                  cls: budget - spent >= 0 ? "text-accent" : "text-danger",
+                },
               ].map((s, i) => (
                 <div
                   key={s.label}
                   className={`min-w-0 overflow-hidden px-2.5 py-3 ${i > 0 ? "border-l border-[var(--border)]" : ""}`}
                 >
                   <div className="truncate text-[0.6875rem] font-medium text-muted-foreground">{s.label}</div>
-                  <div className="money mt-1 whitespace-nowrap text-[clamp(0.6875rem,3.2vw,0.9375rem)] font-semibold text-foreground">
+                  <div className={`money mt-1 whitespace-nowrap text-[clamp(0.6875rem,3.2vw,0.9375rem)] font-semibold ${s.cls}`}>
                     {s.value}
                   </div>
                 </div>
@@ -108,7 +113,7 @@ export default async function DashboardPage({
         )}
         {rows.map(({ category, spent }, i) => (
           <div key={category.id} className="reveal" style={{ animationDelay: `${190 + i * 55}ms` }}>
-            <CategoryCard category={category} spent={spent} />
+            <CategoryCard category={category} spent={spent} ym={ym} markPaidAction={markCategoryPaidAction} />
           </div>
         ))}
       </section>

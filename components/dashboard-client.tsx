@@ -10,7 +10,7 @@ export function DashboardClient({ categories, defaultDate }: { categories: Categ
   return (
     <>
       <Fab onClick={() => setOpen(true)} />
-      <ExpenseSheet open={open} onClose={() => setOpen(false)} categories={categories} defaultDate={defaultDate} />
+      <ExpenseSheet key={open ? "open" : "closed"} open={open} onClose={() => setOpen(false)} categories={categories} defaultDate={defaultDate} />
     </>
   );
 }

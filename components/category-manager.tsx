@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCentavos } from "@/lib/money";
@@ -41,19 +41,19 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
       >
         <span className="eyebrow">New category</span>
         <input name="name" placeholder="Name" className="field w-full px-4 py-3" />
-        <div className="flex items-stretch gap-2">
+        <div className="flex items-stretch gap-2.5">
           <input
             name="emoji"
             defaultValue="📦"
             aria-label="Emoji"
-            className="field w-16 px-2 py-3 text-center text-xl"
+            className="field w-16 shrink-0 px-2 py-3 text-center text-xl"
           />
           <div className="relative flex-1">
-            <span className="money pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₱</span>
+            <span className="money pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground">₱</span>
             <MoneyInput
               name="monthlyBudget"
               placeholder="Budget"
-              className="field money w-full py-3 pl-7 pr-3"
+              className="field money w-full py-3 pl-8 pr-3.5"
             />
           </div>
         </div>
@@ -73,34 +73,28 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
             const editing = editId === c.id;
             const confirming = confirmId === c.id;
             return (
-              <div key={c.id} className="surface relative overflow-hidden p-4">
-                <span
-                  aria-hidden
-                  className="absolute inset-y-3 left-0 w-1 rounded-full"
-                  style={{ background: c.color, boxShadow: `0 0 12px -1px ${c.color}` }}
-                />
-
+              <div key={c.id} className="surface p-4">
                 {editing ? (
                   <form
                     action={(fd) => submit(updateCategoryAction, fd, () => setEditId(null))}
-                    className="space-y-3 pl-2"
+                    className="space-y-3"
                   >
                     <input type="hidden" name="id" value={c.id} />
-                    <div className="flex items-stretch gap-2">
-                      <input name="emoji" defaultValue={c.emoji} aria-label="Emoji" className="field w-16 px-2 py-3 text-center text-xl" />
+                    <div className="flex items-stretch gap-2.5">
+                      <input name="emoji" defaultValue={c.emoji} aria-label="Emoji" className="field w-16 shrink-0 px-2 py-3 text-center text-xl" />
                       <input name="name" defaultValue={c.name} aria-label="Name" className="field flex-1 px-4 py-3" />
                     </div>
                     <ColorPicker name="color" defaultValue={c.color} />
                     <div className="relative">
-                      <span className="money pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₱</span>
+                      <span className="money pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground">₱</span>
                       <MoneyInput
                         name="monthlyBudget"
                         defaultValue={formatCentavos(c.monthlyBudget, { symbol: false })}
                         ariaLabel="Monthly budget"
-                        className="field money w-full py-3 pl-7 pr-3"
+                        className="field money w-full py-3 pl-8 pr-3.5"
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2.5 pt-0.5">
                       <button type="submit" className="btn-accent flex-1 py-2.5 text-sm">Save</button>
                       <button
                         type="button"
@@ -112,25 +106,25 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
                     </div>
                   </form>
                 ) : (
-                  <div className="flex items-center gap-3 pl-2">
+                  <div className="flex items-center gap-3.5">
                     <span
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xl ring-1 ring-inset ring-[var(--border)]"
-                      style={{ background: `color-mix(in srgb, ${c.color} 22%, transparent)` }}
+                      className="tile h-12 w-12 text-xl"
+                      style={{ "--tile": c.color } as CSSProperties}
                     >
                       {c.emoji}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">{c.name}</div>
-                      <div className="money text-sm text-muted-foreground">
+                      <div className="truncate font-semibold leading-tight">{c.name}</div>
+                      <div className="money mt-0.5 text-sm text-muted-foreground">
                         {c.monthlyBudget > 0 ? `${formatCentavos(c.monthlyBudget)} / month` : "No budget"}
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="flex shrink-0 items-center gap-1">
                       <button
                         type="button"
                         onClick={() => { setEditId(c.id); setConfirmId(null); }}
                         aria-label={`Edit ${c.name}`}
-                        className="grid h-9 w-9 place-items-center rounded-xl text-muted-foreground transition hover:text-foreground active:scale-90"
+                        className="grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition hover:bg-[var(--field)] hover:text-foreground active:scale-90"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
                           strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
@@ -156,8 +150,8 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
                           aria-label={confirming ? `Confirm delete ${c.name}` : `Delete ${c.name}`}
                           className={
                             confirming
-                              ? "rounded-xl bg-danger/15 px-3 py-2 text-xs font-semibold text-danger transition active:scale-95"
-                              : "grid h-9 w-9 place-items-center rounded-xl text-muted-foreground transition hover:text-danger active:scale-90"
+                              ? "rounded-xl bg-danger/15 px-3 py-2.5 text-xs font-semibold text-danger ring-1 ring-inset ring-[color-mix(in_srgb,var(--danger)_40%,transparent)] transition active:scale-95"
+                              : "grid h-10 w-10 place-items-center rounded-xl text-muted-foreground transition hover:bg-[var(--field)] hover:text-danger active:scale-90"
                           }
                         >
                           {confirming ? (

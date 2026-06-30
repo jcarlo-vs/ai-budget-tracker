@@ -14,16 +14,27 @@ export function groupThousands(raw: string): string {
 
 export function MoneyInput({
   name, defaultValue = "", placeholder, className, autoFocus, ariaLabel,
+  value: controlledValue, onValueChange,
 }: {
-  name: string; defaultValue?: string; placeholder?: string;
+  name?: string; defaultValue?: string; placeholder?: string;
   className?: string; autoFocus?: boolean; ariaLabel?: string;
+  // Optional controlled mode: when `value`/`onValueChange` are provided the
+  // parent owns the (already grouped) string. Otherwise the input manages its
+  // own state (unchanged behaviour for existing callers).
+  value?: string; onValueChange?: (next: string) => void;
 }) {
-  const [value, setValue] = useState(() => (defaultValue ? groupThousands(defaultValue) : ""));
+  const controlled = controlledValue !== undefined;
+  const [internal, setInternal] = useState(() => (defaultValue ? groupThousands(defaultValue) : ""));
+  const value = controlled ? controlledValue : internal;
   return (
     <input
       name={name}
       value={value}
-      onChange={(e) => setValue(groupThousands(e.target.value))}
+      onChange={(e) => {
+        const next = groupThousands(e.target.value);
+        if (!controlled) setInternal(next);
+        onValueChange?.(next);
+      }}
       inputMode="decimal"
       autoFocus={autoFocus}
       aria-label={ariaLabel}
