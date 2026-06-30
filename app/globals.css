@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Theme: Dark Glass — frosted cards, neon cyan, deep navy.
+   Tokens are the single source of truth; components reference these, never raw
+   hexes (per-category colors are data and may be inlined).
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --background: #0b1020;
+  --foreground: #e8ecf5;
+  --card: rgba(255, 255, 255, 0.06);
+  --card-foreground: #e8ecf5;
+  --muted: rgba(255, 255, 255, 0.10);
+  --muted-foreground: #9aa3b8;
+  --accent: #22d3ee;
+  --accent-foreground: #04121a;
+  --border: rgba(255, 255, 255, 0.14);
+  --danger: #fb7185;
+  --radius: 1.25rem;
+
+  /* Elevated Dark Glass — depth, glow and a display face. */
+  --accent-2: #6366f1;                     /* indigo companion for the backdrop */
+  --accent-glow: rgba(34, 211, 238, 0.40); /* focus ring / neon halo           */
+  --card-hi: rgba(255, 255, 255, 0.10);    /* glass top-edge highlight          */
+  --field: rgba(255, 255, 255, 0.04);
+  --font-display: var(--font-space-grotesk), "Space Grotesk", ui-sans-serif,
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-2: var(--accent-2);
+  --color-border: var(--border);
+  --color-danger: var(--danger);
+  --radius-theme: var(--radius);
+  --font-display: var(--font-display);
+}
+
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmospheric depth — a fixed, low-opacity neon field behind every screen so the
+   frosted cards read as glass lit from behind rather than flat panels on navy. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 48% at 84% -10%, rgba(34, 211, 238, 0.22), transparent 70%),
+    radial-gradient(52% 44% at 6% 8%, rgba(99, 102, 241, 0.20), transparent 72%),
+    radial-gradient(90% 60% at 50% 116%, rgba(34, 211, 238, 0.10), transparent 70%);
+}
+
+/* Surface utility — Dark Glass frosted card: translucent fill, blurred backdrop,
+   a hairline top highlight and a soft lift shadow so cards float over the glow. */
+.surface {
+  background:
+    linear-gradient(180deg, var(--card-hi), rgba(255, 255, 255, 0)) ,
+    var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.10),
+    0 14px 34px -18px rgba(0, 0, 0, 0.75);
+}
+
+/* Form field — lighter than a card, with a neon focus halo. ≥16px to stop iOS zoom. */
+.field {
+  background: var(--field);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+.field::placeholder { color: var(--muted-foreground); }
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Primary action — neon cyan with a coloured glow. */
+.btn-accent {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-radius: var(--radius);
+  font-weight: 600;
+  box-shadow: 0 8px 24px -10px var(--accent-glow);
+  transition: transform 0.12s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+.btn-accent:active { transform: scale(0.97); }
+.btn-accent:disabled { opacity: 0.6; box-shadow: none; }
+
+/* Typography helpers. */
+.display { font-family: var(--font-display); }
+.money { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: -0.02em; }
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+/* Bottom navigation — fully opaque (slightly elevated above the page) so scrolled
+   content never shows through. */
+.navbar {
+  background: color-mix(in srgb, var(--background) 94%, #ffffff 6%);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 24px -16px rgba(0, 0, 0, 0.85);
+}
+
+/* Safe-area helpers. */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+input, select, textarea { font-size: 16px; } /* prevent iOS zoom */
+
+/* ── Motion ─────────────────────────────────────────────────────────────── */
+
+/* Orchestrated page-load: cards rise + fade. Stagger via inline animation-delay. */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal { animation: reveal-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Budget bar fills from empty on mount (end width is the element's inline width). */
+@keyframes bar-grow { from { width: 0; } }
+.bar-fill { animation: bar-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Soft neon breathing for accent highlights. */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+.glow-pulse { animation: glow-pulse 3.6s ease-in-out infinite; }
+
+/* Skeleton shimmer tuned to the glass aesthetic. */
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.10),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+/* Slim top progress bar during a pending route transition (useLinkStatus). */
+@keyframes progress-grow {
+  0%   { width: 0; opacity: 1; }
+  90%  { width: 88%; }
+  100% { width: 92%; opacity: 1; }
+}
+.route-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2.5px;
+  z-index: 60;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px var(--accent-glow);
+  animation: progress-grow 1.4s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .bar-fill,
+  .glow-pulse,
+  .skeleton::after,
+  .route-progress {
+    animation: none !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
