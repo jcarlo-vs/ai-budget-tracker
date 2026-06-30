@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Category } from "@/lib/db/schema";
 import { BudgetBar } from "@/components/budget-bar";
+import { formatCentavos } from "@/lib/money";
 
 export function CategoryCard({ category, spent }: { category: Category; spent: number }) {
+  const remaining = category.monthlyBudget - spent;
   return (
     <Link
       href={`/category/${category.id}`}
@@ -30,6 +32,19 @@ export function CategoryCard({ category, spent }: { category: Category; spent: n
       </div>
       <div className="pl-2">
         <BudgetBar spent={spent} budget={category.monthlyBudget} color={category.color} />
+        {category.monthlyBudget > 0 && (
+          <p className="mt-1.5 text-right text-xs text-muted-foreground">
+            {remaining >= 0 ? (
+              <>
+                <span className="money font-semibold text-accent">{formatCentavos(remaining)}</span> left to spend
+              </>
+            ) : (
+              <span className="text-danger">
+                <span className="money font-semibold">{formatCentavos(-remaining)}</span> over budget
+              </span>
+            )}
+          </p>
+        )}
       </div>
     </Link>
   );
