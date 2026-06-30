@@ -17,6 +17,7 @@ function readExpenseForm(form: FormData) {
     amount: amount ?? 0,
     description: String(form.get("description") ?? ""),
     occurredOn: String(form.get("occurredOn") ?? ""),
+    paymentMethod: String(form.get("paymentMethod") || "cash"),
   });
 }
 

@@ -12,6 +12,7 @@ export const expenseSchema = z.object({
   amount: z.number().int().positive(),
   description: z.string().trim().max(140).default(""),
   occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  paymentMethod: z.enum(["gcash", "cash", "bank_qr"]).optional(),
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;

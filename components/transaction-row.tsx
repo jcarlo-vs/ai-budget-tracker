@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCentavos } from "@/lib/money";
+import { paymentLabel } from "@/lib/payment";
 import { deleteExpenseAction } from "@/app/actions/expenses";
 import type { Transaction } from "@/lib/db/schema";
 
@@ -9,7 +10,7 @@ export function TransactionRow({ tx, onEdit }: { tx: Transaction; onEdit: () => 
     <div className="surface flex items-center justify-between p-3.5">
       <button type="button" onClick={onEdit} className="min-w-0 flex-1 text-left transition active:scale-[0.99]">
         <div className="truncate font-medium">{tx.description || "—"}</div>
-        <div className="text-xs text-muted-foreground">{tx.occurredOn}</div>
+        <div className="text-xs text-muted-foreground">{tx.occurredOn} · {paymentLabel(tx.paymentMethod)}</div>
       </button>
       <div className="flex items-center gap-2">
         <span className="money font-semibold">{formatCentavos(tx.amount)}</span>

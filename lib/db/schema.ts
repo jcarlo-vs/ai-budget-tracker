@@ -17,6 +17,7 @@ export const transactions = pgTable("transactions", {
   amount: integer("amount").notNull(),
   description: text("description").notNull().default(""),
   occurredOn: date("occurred_on").notNull(),
+  paymentMethod: text("payment_method").notNull().default("cash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

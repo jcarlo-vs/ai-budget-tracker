@@ -15,6 +15,13 @@
       "when": 1782799215321,
       "tag": "0001_mixed_sersi",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782810443626,
+      "tag": "0002_safe_iron_lad",
+      "breakpoints": true
     }
   ]
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sheet } from "@/components/sheet";
 import { addExpenseAction, updateExpenseAction } from "@/app/actions/expenses";
 import { formatCentavos } from "@/lib/money";
 import { MoneyInput } from "@/components/money-input";
+import { PAYMENT_METHODS } from "@/lib/payment";
 import type { Category, Transaction } from "@/lib/db/schema";
 
 export function ExpenseSheet({
@@ -18,6 +19,7 @@ export function ExpenseSheet({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const editing = Boolean(editTx);
+  const [method, setMethod] = useState<string>(editTx?.paymentMethod ?? "cash");
 
   return (
     <Sheet open={open} onClose={onClose} title={editing ? "Edit expense" : "Add expense"}>
@@ -61,6 +63,22 @@ export function ExpenseSheet({
             <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
           ))}
         </select>
+        <input type="hidden" name="paymentMethod" value={method} />
+        <div className="grid grid-cols-3 gap-2" role="group" aria-label="Payment method">
+          {PAYMENT_METHODS.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => setMethod(m.value)}
+              aria-pressed={method === m.value}
+              className={`rounded-[var(--radius)] py-2.5 text-sm font-medium transition active:scale-95 ${
+                method === m.value ? "bg-accent text-accent-foreground" : "field text-muted-foreground"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
         <input
           name="occurredOn" type="date"
           defaultValue={editTx?.occurredOn ?? defaultDate}
