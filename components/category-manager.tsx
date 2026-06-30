@@ -57,7 +57,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
             />
           </div>
         </div>
-        <ColorPicker name="color" defaultValue="#22d3ee" />
+        <ColorPicker name="color" defaultValue="#0a84ff" />
         <button type="submit" className="btn-accent w-full py-3">Add category</button>
       </form>
 

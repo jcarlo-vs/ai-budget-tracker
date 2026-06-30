@@ -65,25 +65,13 @@ export function BottomNav() {
               href={href}
               prefetch={false}
               aria-current={active ? "page" : undefined}
-              className={`group relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.7rem] font-medium transition-colors ${
+              className={`group relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.625rem] font-medium transition-colors ${
                 active ? "text-accent" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <NavLinkProgress />
-              {active && (
-                <span
-                  aria-hidden
-                  className="absolute -top-px h-0.5 w-9 rounded-full bg-accent shadow-[0_0_10px_var(--accent-glow)]"
-                />
-              )}
-              <span
-                className={`grid h-9 w-9 place-items-center rounded-xl transition-all duration-200 ${
-                  active
-                    ? "bg-accent/15 shadow-[0_0_18px_-4px_var(--accent-glow)]"
-                    : "group-active:scale-90"
-                }`}
-              >
-                <Icon className="h-[22px] w-[22px]" />
+              <span className="grid h-7 w-7 place-items-center transition-transform duration-150 group-active:scale-90">
+                <Icon className="h-[23px] w-[23px]" />
               </span>
               {label}
             </Link>

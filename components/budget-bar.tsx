@@ -11,7 +11,7 @@ export function BudgetBar({ spent, budget, color }: { spent: number; budget: num
         {budget > 0 && <span className="money text-muted-foreground">{formatCentavos(budget)}</span>}
       </div>
       {budget > 0 && (
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--field)] ring-1 ring-inset ring-[var(--border)]">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--field)] ring-1 ring-inset ring-[var(--border)]">
           <div
             className="bar-fill h-full rounded-full transition-[width] duration-700 ease-out"
             style={{

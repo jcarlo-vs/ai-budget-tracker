@@ -3,11 +3,11 @@
 import { useState } from "react";
 
 const PALETTE = [
-  "#22d3ee", "#34d399", "#3b82f6", "#6366f1", "#a855f7",
+  "#0a84ff", "#30d158", "#3b82f6", "#6366f1", "#a855f7",
   "#ec4899", "#f43f5e", "#f59e0b", "#84cc16", "#f97316",
 ];
 
-export function ColorPicker({ name = "color", defaultValue = "#22d3ee" }: { name?: string; defaultValue?: string }) {
+export function ColorPicker({ name = "color", defaultValue = "#0a84ff" }: { name?: string; defaultValue?: string }) {
   const [color, setColor] = useState(defaultValue.toLowerCase());
   const swatches = PALETTE.includes(color) ? PALETTE : [color, ...PALETTE];
   return (
