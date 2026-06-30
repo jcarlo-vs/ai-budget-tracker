@@ -34,7 +34,7 @@ function CategoryInner() {
 
   if (!data) {
     return (
-      <main className="mx-auto max-w-md space-y-4 px-4 pb-28 pt-6">
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom)+10rem)] pt-6">
         <Skeleton className="h-5 w-20" />
         <Skeleton className="h-28 w-full" />
         <Skeleton className="h-11 w-full" />
@@ -48,7 +48,7 @@ function CategoryInner() {
 
   if (data.notFound) {
     return (
-      <main className="mx-auto max-w-md space-y-4 px-4 pb-28 pt-6">
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom)+10rem)] pt-6">
         <div className="surface flex flex-col items-center gap-3 px-6 py-12 text-center">
           <span className="text-3xl">🔍</span>
           <p className="text-sm text-muted-foreground">Category not found.</p>
@@ -63,7 +63,7 @@ function CategoryInner() {
   const defaultDate = new Date().toISOString().slice(0, 10);
 
   return (
-    <main className="mx-auto max-w-md space-y-4 px-4 pb-28 pt-6">
+    <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom)+10rem)] pt-6">
       <Link href="/" className="reveal inline-flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
           strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>

@@ -28,7 +28,7 @@ function DashboardInner() {
 
   if (!data) {
     return (
-      <main className="mx-auto max-w-md space-y-4 px-4 pb-28 pt-6">
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-[calc(env(safe-area-inset-bottom)+10rem)] pt-6">
         <Skeleton className="h-11 w-full" />
         <Skeleton className="h-44 w-full" />
         <div className="space-y-3 pt-2">
@@ -47,7 +47,7 @@ function DashboardInner() {
   const defaultDate = new Date().toISOString().slice(0, 10);
 
   return (
-    <main className="mx-auto max-w-md space-y-5 px-4 pb-28 pt-6">
+    <main className="mx-auto max-w-md space-y-5 px-4 pb-[calc(env(safe-area-inset-bottom)+10rem)] pt-6">
       <div className="reveal">
         <MonthSwitcher ym={ym} basePath="/" />
       </div>
