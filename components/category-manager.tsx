@@ -119,26 +119,38 @@ export function CategoryManager({
         </div>
         <ColorPicker name="color" defaultValue="#0a84ff" />
 
-        {/* Applies to: permanent (every month) vs temporary (this month only) */}
-        <div className="space-y-1.5">
+        {/* Applies to: permanent (every month) vs temporary (this month only).
+            iOS-style segmented control — one track, equal segments, a subtle
+            accent-tinted active thumb (matches the "This month" pill) so it
+            doesn't compete with the solid-blue "Add category" CTA below. */}
+        <div className="space-y-2">
           <span className="eyebrow">Applies to</span>
-          <div className="grid grid-cols-2 gap-2" role="group" aria-label="Applies to">
+          <div
+            className="grid grid-cols-2 gap-1 rounded-2xl bg-[var(--field)] p-1 ring-1 ring-inset ring-[var(--border)]"
+            role="group"
+            aria-label="Applies to"
+          >
             {[
               { key: "every" as const, label: "Every month" },
               { key: "month" as const, label: `Only ${monthLabel}` },
-            ].map((opt) => (
-              <button
-                key={opt.key}
-                type="button"
-                onClick={() => setScopeMode(opt.key)}
-                aria-pressed={scopeMode === opt.key}
-                className={`rounded-[var(--radius)] py-2.5 text-sm font-medium transition active:scale-95 ${
-                  scopeMode === opt.key ? "bg-accent text-accent-foreground" : "field text-muted-foreground"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+            ].map((opt) => {
+              const active = scopeMode === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setScopeMode(opt.key)}
+                  aria-pressed={active}
+                  className={`truncate rounded-xl px-2 py-2.5 text-center text-sm font-medium transition active:scale-[0.97] ${
+                    active
+                      ? "bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] text-accent ring-1 ring-inset ring-[color-mix(in_srgb,var(--accent)_32%,transparent)]"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
