@@ -16,6 +16,10 @@ export const categories = pgTable("categories", {
   monthlyBudget: integer("monthly_budget").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
   archived: boolean("archived").notNull().default(false),
+  // Month scope: null/null = permanent (shows every month); a concrete year+month
+  // = temporary (visible only in that one month). Nullable + backward-compatible.
+  scopeYear: integer("scope_year"),
+  scopeMonth: integer("scope_month"),
   ...audit,
 });
 

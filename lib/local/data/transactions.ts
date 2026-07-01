@@ -107,8 +107,15 @@ export async function markCategoryPaid(categoryId: string, ym: YearMonth): Promi
   const budget = row.category.monthlyBudget;
   const remaining = budget - row.spent;
   if (budget <= 0 || remaining <= 0) return;
-  const today = new Date().toISOString().slice(0, 10);
-  await addExpense({ categoryId, amount: remaining, description: "Paid", occurredOn: today, paymentMethod: "cash" });
+  // Date the fill inside the month being paid (not literally today), so marking a
+  // past/other month paid lands in THAT month — where `remaining` was computed —
+  // instead of leaking into the current month. Current month still uses today.
+  const d = new Date();
+  const isCurrentMonth = d.getFullYear() === ym.year && d.getMonth() + 1 === ym.month;
+  const occurredOn = isCurrentMonth
+    ? d.toISOString().slice(0, 10)
+    : `${ym.year}-${String(ym.month).padStart(2, "0")}-${String(new Date(ym.year, ym.month, 0).getDate()).padStart(2, "0")}`;
+  await addExpense({ categoryId, amount: remaining, description: "Paid", occurredOn, paymentMethod: "cash" });
 }
 
 export async function getItemsByTransaction(txIds: string[]): Promise<Map<string, LocalExpenseItem[]>> {

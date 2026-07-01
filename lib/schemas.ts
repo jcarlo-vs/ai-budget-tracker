@@ -49,6 +49,10 @@ const categoryRowSchema = z.object({
   monthlyBudget: z.number(),
   sortOrder: z.number(),
   archived: z.boolean(),
+  // Month scope. Nullable + defaulted so pre-scope clients that omit them still
+  // validate (they sync as permanent categories). Output type stays number|null.
+  scopeYear: z.number().nullable().default(null),
+  scopeMonth: z.number().nullable().default(null),
   createdAt: z.string(),
 });
 

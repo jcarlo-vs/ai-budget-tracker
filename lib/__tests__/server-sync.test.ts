@@ -19,7 +19,7 @@ function empty(): SyncChanges {
 function cat(over: Partial<LocalCategory> & Pick<LocalCategory, "id" | "updatedAt">): LocalCategory {
   return {
     name: "Food", emoji: "🍜", color: "#10b981", monthlyBudget: 0, sortOrder: 0, archived: false,
-    createdAt: over.updatedAt, deletedAt: null, ...over,
+    scopeYear: null, scopeMonth: null, createdAt: over.updatedAt, deletedAt: null, ...over,
   };
 }
 
@@ -42,6 +42,31 @@ describe("server sync ops (last-write-wins)", () => {
     await applyChanges(db, { ...empty(), categories: [cat({ id: "a", updatedAt: "2026-07-01T00:00:00.000Z", name: "Fresh" })] });
     pulled = await fetchChangedSince(db, EPOCH);
     expect(pulled.categories[0].name).toBe("Fresh");
+  });
+
+  it("round-trips a category's scopeYear/scopeMonth (temporary) and null scope (permanent)", async () => {
+    await applyChanges(db, {
+      ...empty(),
+      categories: [
+        cat({ id: "temp", updatedAt: "2026-07-01T00:00:00.000Z", name: "Vacation", scopeYear: 2026, scopeMonth: 7 }),
+        cat({ id: "perm", updatedAt: "2026-07-01T00:00:00.000Z", name: "Rent" }),
+      ],
+    });
+    const pulled = await fetchChangedSince(db, EPOCH);
+    const temp = pulled.categories.find((c) => c.id === "temp")!;
+    const perm = pulled.categories.find((c) => c.id === "perm")!;
+    expect(temp.scopeYear).toBe(2026);
+    expect(temp.scopeMonth).toBe(7);
+    expect(perm.scopeYear).toBeNull();
+    expect(perm.scopeMonth).toBeNull();
+
+    // A later update to the scope also propagates via LWW.
+    await applyChanges(db, {
+      ...empty(),
+      categories: [cat({ id: "temp", updatedAt: "2026-07-02T00:00:00.000Z", name: "Vacation", scopeYear: 2026, scopeMonth: 8 })],
+    });
+    const after = (await fetchChangedSince(db, EPOCH)).categories.find((c) => c.id === "temp")!;
+    expect(after.scopeMonth).toBe(8);
   });
 
   it("tombstone propagates as a soft delete", async () => {

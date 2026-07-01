@@ -95,9 +95,11 @@ function CategoryInner() {
         <BudgetBar spent={spent} budget={category.monthlyBudget} color={category.color} />
       </header>
 
-      <div className="reveal" style={{ animationDelay: "100ms" }}>
-        <MonthSwitcher ym={ym} basePath="/category" params={{ id: category.id }} />
-      </div>
+      {category.scopeYear == null && (
+        <div className="reveal" style={{ animationDelay: "100ms" }}>
+          <MonthSwitcher ym={ym} basePath="/category" params={{ id: category.id }} />
+        </div>
+      )}
 
       <CategoryDetailClient category={category} transactions={transactions} defaultDate={defaultDate} />
     </main>

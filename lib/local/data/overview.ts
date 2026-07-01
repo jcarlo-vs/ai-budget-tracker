@@ -1,5 +1,5 @@
 import { localDb } from "@/lib/local/db";
-import { listCategories } from "@/lib/local/data/categories";
+import { listCategoriesForMonth } from "@/lib/local/data/categories";
 import type { LocalCategory } from "@/lib/local/types";
 import { monthRange, type YearMonth } from "@/lib/month";
 
@@ -7,7 +7,9 @@ export async function getCategoriesWithMonthTotals(
   ym: YearMonth,
 ): Promise<Array<{ category: LocalCategory; spent: number }>> {
   const { start, end } = monthRange(ym);
-  const [cats, txns] = await Promise.all([listCategories(), localDb.transactions.toArray()]);
+  // Only permanent + this-month temporary categories (and their budgets) count
+  // toward the dashboard list and the Allocated total.
+  const [cats, txns] = await Promise.all([listCategoriesForMonth(ym), localDb.transactions.toArray()]);
   const byId = new Map<string, number>();
   for (const t of txns) {
     if (t.deletedAt != null || t.occurredOn < start || t.occurredOn >= end) continue;

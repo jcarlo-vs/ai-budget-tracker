@@ -2,6 +2,7 @@ import { localDb } from "@/lib/local/db";
 import { touch } from "@/lib/local/touch";
 import type { LocalCategory } from "@/lib/local/types";
 import type { CategoryInput } from "@/lib/schemas";
+import type { YearMonth } from "@/lib/month";
 
 const now = () => new Date().toISOString();
 
@@ -20,12 +21,35 @@ export async function listCategories(): Promise<LocalCategory[]> {
     );
 }
 
-export async function createCategory(input: CategoryInput): Promise<LocalCategory> {
+// A category shows in a month when it is permanent (no scope) or when its scope
+// matches that exact month. This is the single source of truth for the filter.
+export function visibleInMonth(
+  category: Pick<LocalCategory, "scopeYear" | "scopeMonth">,
+  ym: YearMonth,
+): boolean {
+  return (
+    category.scopeYear == null ||
+    (category.scopeYear === ym.year && category.scopeMonth === ym.month)
+  );
+}
+
+// Active categories visible in the given month (permanent + this-month temporary),
+// preserving the same ordering as listCategories.
+export async function listCategoriesForMonth(ym: YearMonth): Promise<LocalCategory[]> {
+  return (await listCategories()).filter((c) => visibleInMonth(c, ym));
+}
+
+export async function createCategory(
+  input: CategoryInput,
+  scope?: { year: number; month: number },
+): Promise<LocalCategory> {
   const ts = now();
   const row: LocalCategory = {
     id: crypto.randomUUID(),
     sortOrder: 0,
     archived: false,
+    scopeYear: scope?.year ?? null,
+    scopeMonth: scope?.month ?? null,
     createdAt: ts,
     updatedAt: ts,
     deletedAt: null,

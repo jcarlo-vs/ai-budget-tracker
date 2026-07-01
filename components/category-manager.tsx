@@ -8,6 +8,23 @@ import { ColorPicker } from "@/components/color-picker";
 import { createCategory, updateCategory, deleteCategory } from "@/lib/local/data/categories";
 import { categorySchema } from "@/lib/schemas";
 import type { LocalCategory } from "@/lib/local/types";
+import type { YearMonth } from "@/lib/month";
+
+// Subtle glass pill marking a temporary (this-month-only) category.
+function ThisMonthPill() {
+  return (
+    <span
+      className="shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide"
+      style={{
+        color: "var(--accent)",
+        background: "color-mix(in srgb, var(--accent) 14%, transparent)",
+        border: "0.5px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+      }}
+    >
+      This month
+    </span>
+  );
+}
 
 function readCategoryForm(form: FormData) {
   const budget = parseAmountToCentavos(String(form.get("monthlyBudget") ?? "0")) ?? 0;
@@ -19,10 +36,19 @@ function readCategoryForm(form: FormData) {
   });
 }
 
-export function CategoryManager({ categories }: { categories: LocalCategory[] }) {
+export function CategoryManager({
+  categories, ym, monthLabel,
+}: {
+  categories: LocalCategory[];
+  ym: YearMonth;
+  monthLabel: string;
+}) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [createKey, setCreateKey] = useState(0);
+  // "Applies to" choice for the create form: every month (permanent) or only the
+  // current Manage month (temporary). Reset alongside the form after each save.
+  const [scopeMode, setScopeMode] = useState<"every" | "month">("every");
 
   async function onCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,8 +58,12 @@ export function CategoryManager({ categories }: { categories: LocalCategory[] })
       return;
     }
     try {
-      await createCategory(parsed.data);
+      await createCategory(
+        parsed.data,
+        scopeMode === "month" ? { year: ym.year, month: ym.month } : undefined,
+      );
       toast.success("Saved");
+      setScopeMode("every");
       setCreateKey((k) => k + 1);
     } catch {
       toast.error("Could not save category");
@@ -88,6 +118,30 @@ export function CategoryManager({ categories }: { categories: LocalCategory[] })
           </div>
         </div>
         <ColorPicker name="color" defaultValue="#0a84ff" />
+
+        {/* Applies to: permanent (every month) vs temporary (this month only) */}
+        <div className="space-y-1.5">
+          <span className="eyebrow">Applies to</span>
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label="Applies to">
+            {[
+              { key: "every" as const, label: "Every month" },
+              { key: "month" as const, label: `Only ${monthLabel}` },
+            ].map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setScopeMode(opt.key)}
+                aria-pressed={scopeMode === opt.key}
+                className={`rounded-[var(--radius)] py-2.5 text-sm font-medium transition active:scale-95 ${
+                  scopeMode === opt.key ? "bg-accent text-accent-foreground" : "field text-muted-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button type="submit" className="btn-accent w-full py-3">Add category</button>
       </form>
 
@@ -140,7 +194,10 @@ export function CategoryManager({ categories }: { categories: LocalCategory[] })
                       {c.emoji}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-semibold leading-tight">{c.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="truncate font-semibold leading-tight">{c.name}</span>
+                        {c.scopeYear != null && <ThisMonthPill />}
+                      </div>
                       <div className="money mt-0.5 text-sm text-muted-foreground">
                         {c.monthlyBudget > 0 ? `${formatCentavos(c.monthlyBudget)} / month` : "No budget"}
                       </div>

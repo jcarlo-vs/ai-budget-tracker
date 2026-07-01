@@ -4,7 +4,7 @@ import { Suspense, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
-import { listCategories } from "@/lib/local/data/categories";
+import { listCategoriesForMonth } from "@/lib/local/data/categories";
 import { getMonthlyBudget, getRecentBudgetBefore } from "@/lib/local/data/budgets";
 import { getYearMonth, parseYearMonth, formatMonthLabel } from "@/lib/month";
 import { CategoryManager } from "@/components/category-manager";
@@ -26,7 +26,7 @@ function ManageInner() {
   const data = useLiveQuery(
     async () => {
       const [categories, currentAmount, suggested] = await Promise.all([
-        listCategories(),
+        listCategoriesForMonth(ym),
         getMonthlyBudget(ym),
         getRecentBudgetBefore(ym),
       ]);
@@ -186,7 +186,7 @@ function ManageInner() {
 
       <div className="reveal space-y-3" style={{ animationDelay: "120ms" }}>
         <h2 className="eyebrow px-1">Categories</h2>
-        <CategoryManager categories={categories} />
+        <CategoryManager categories={categories} ym={ym} monthLabel={formatMonthLabel(ym)} />
       </div>
     </main>
   );

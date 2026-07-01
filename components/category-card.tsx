@@ -53,7 +53,21 @@ export function CategoryCard({
         </span>
 
         <div className="min-w-0 flex-1">
-          <div className="truncate font-semibold leading-tight">{category.name}</div>
+          <div className="flex items-center gap-2">
+            <span className="truncate font-semibold leading-tight">{category.name}</span>
+            {category.scopeYear != null && (
+              <span
+                className="shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide"
+                style={{
+                  color: "var(--accent)",
+                  background: "color-mix(in srgb, var(--accent) 14%, transparent)",
+                  border: "0.5px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+                }}
+              >
+                This month
+              </span>
+            )}
+          </div>
           <div className="mt-0.5 truncate text-xs text-muted-foreground">
             {hasBudget ? <>of {formatCentavos(budget)}</> : "No budget set"}
           </div>

@@ -1,7 +1,10 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import { localDb } from "@/lib/local/db";
-import { listCategories, createCategory, updateCategory, deleteCategory } from "@/lib/local/data/categories";
+import {
+  listCategories, createCategory, updateCategory, deleteCategory,
+  listCategoriesForMonth, visibleInMonth,
+} from "@/lib/local/data/categories";
 import {
   addExpense, updateExpense, deleteExpense, listTransactions, getItemsByTransaction, markCategoryPaid,
 } from "@/lib/local/data/transactions";
@@ -52,11 +55,57 @@ describe("local categories", () => {
     // ids deliberately chosen so id.localeCompare would REVERSE the createdAt order:
     // "zzzz" was created first but sorts last by id.
     await localDb.categories.bulkPut([
-      { id: "zzzz", name: "First", emoji: "🍜", color: "#10b981", monthlyBudget: 0, sortOrder: 0, archived: false, createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z", deletedAt: null },
-      { id: "aaaa", name: "Second", emoji: "🎮", color: "#6366f1", monthlyBudget: 0, sortOrder: 0, archived: false, createdAt: "2026-06-02T00:00:00.000Z", updatedAt: "2026-06-02T00:00:00.000Z", deletedAt: null },
+      { id: "zzzz", name: "First", emoji: "🍜", color: "#10b981", monthlyBudget: 0, sortOrder: 0, archived: false, scopeYear: null, scopeMonth: null, createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z", deletedAt: null },
+      { id: "aaaa", name: "Second", emoji: "🎮", color: "#6366f1", monthlyBudget: 0, sortOrder: 0, archived: false, scopeYear: null, scopeMonth: null, createdAt: "2026-06-02T00:00:00.000Z", updatedAt: "2026-06-02T00:00:00.000Z", deletedAt: null },
     ]);
     const list = await listCategories();
     expect(list.map((c) => c.name)).toEqual(["First", "Second"]);
+  });
+});
+
+describe("category month scope", () => {
+  const jul = { year: 2026, month: 7 };
+  const aug = { year: 2026, month: 8 };
+
+  it("createCategory without a scope stores null/null (permanent)", async () => {
+    const c = await createCategory(base);
+    expect(c.scopeYear).toBeNull();
+    expect(c.scopeMonth).toBeNull();
+    const stored = await localDb.categories.get(c.id);
+    expect(stored?.scopeYear).toBeNull();
+    expect(stored?.scopeMonth).toBeNull();
+  });
+
+  it("createCategory with a scope stores that year/month (temporary)", async () => {
+    const c = await createCategory(base, { year: 2026, month: 7 });
+    expect(c.scopeYear).toBe(2026);
+    expect(c.scopeMonth).toBe(7);
+    const stored = await localDb.categories.get(c.id);
+    expect(stored?.scopeYear).toBe(2026);
+    expect(stored?.scopeMonth).toBe(7);
+  });
+
+  it("visibleInMonth: permanent shows in any month; temporary only in its month", () => {
+    const permanent = { scopeYear: null, scopeMonth: null };
+    const tempJul = { scopeYear: 2026, scopeMonth: 7 };
+    expect(visibleInMonth(permanent, jul)).toBe(true);
+    expect(visibleInMonth(permanent, aug)).toBe(true);
+    expect(visibleInMonth(tempJul, jul)).toBe(true);
+    expect(visibleInMonth(tempJul, aug)).toBe(false);
+    // same month number in a different year must not match
+    expect(visibleInMonth(tempJul, { year: 2025, month: 7 })).toBe(false);
+  });
+
+  it("listCategoriesForMonth includes permanent + this-month temporary, hides other-month", async () => {
+    const permanent = await createCategory({ ...base, name: "Rent" });
+    const temp = await createCategory({ ...base, name: "Vacation" }, jul);
+
+    const julList = await listCategoriesForMonth(jul);
+    expect(julList.map((c) => c.id).sort()).toEqual([permanent.id, temp.id].sort());
+
+    const augList = await listCategoriesForMonth(aug);
+    expect(augList.map((c) => c.id)).toEqual([permanent.id]);
+    expect(augList.some((c) => c.id === temp.id)).toBe(false);
   });
 });
 
@@ -186,6 +235,29 @@ describe("local overview", () => {
     await addExpense({ categoryId: food.id, amount: 20000, description: "", occurredOn: "2026-06-10" });
     const o = await getMonthOverview({ year: 2026, month: 6 });
     expect(o).toEqual({ spent: 20000, budget: 500000, remaining: 480000 });
+  });
+
+  it("excludes other-month temporary categories from the list and Allocated", async () => {
+    const permanent = await createCategory({ name: "Food", emoji: "🍜", color: "#10b981", monthlyBudget: 500000 });
+    // Temporary category scoped to July, plus a July-dated expense on it.
+    const julTemp = await createCategory(
+      { name: "Vacation", emoji: "🏖️", color: "#0a84ff", monthlyBudget: 300000 },
+      { year: 2026, month: 7 },
+    );
+    await addExpense({ categoryId: julTemp.id, amount: 90000, description: "", occurredOn: "2026-07-05" });
+
+    // In August the temporary category (and its budget) must not appear.
+    const augRows = await getCategoriesWithMonthTotals({ year: 2026, month: 8 });
+    expect(augRows.map((r) => r.category.id)).toEqual([permanent.id]);
+    const augAllocated = augRows.reduce((a, r) => a + r.category.monthlyBudget, 0);
+    expect(augAllocated).toBe(500000);
+
+    // In July it appears with its own spend and budget.
+    const julRows = await getCategoriesWithMonthTotals({ year: 2026, month: 7 });
+    expect(julRows.map((r) => r.category.id).sort()).toEqual([permanent.id, julTemp.id].sort());
+    expect(julRows.find((r) => r.category.id === julTemp.id)!.spent).toBe(90000);
+    const julAllocated = julRows.reduce((a, r) => a + r.category.monthlyBudget, 0);
+    expect(julAllocated).toBe(800000);
   });
 });
 

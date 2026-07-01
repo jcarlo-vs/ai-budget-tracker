@@ -17,7 +17,7 @@ beforeEach(async () => {
 function cat(id: string, updatedAt: string): LocalCategory {
   return {
     id, name: "Food", emoji: "🍜", color: "#10b981", monthlyBudget: 0, sortOrder: 0,
-    archived: false, createdAt: updatedAt, updatedAt, deletedAt: null,
+    archived: false, scopeYear: null, scopeMonth: null, createdAt: updatedAt, updatedAt, deletedAt: null,
   };
 }
 
